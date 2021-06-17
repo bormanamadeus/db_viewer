@@ -41,12 +41,14 @@ class Input():
             findChildren() - finds depends output 
             printChildren() - prints children information
     """
-    def __init__(self, panel, input_numeral, input_type=None, description=None):
+    def __init__(self, panel, input_numeral, name=None, input_type=None, description=None, tab=''):
         self.__panel = panel
         self.__input_numeral = input_numeral
         self.__type = input_type
+        self.__name = None
         self.__description = description 
         self.__children = {}
+        self.__tab = tab
 
     def printInfo(self):
         print('* %s: %s {%s}' % (self.__input_numeral, self.__type, self.__description))
@@ -60,13 +62,23 @@ class Input():
         with Table(path_logic_file) as inputs:
 
             for row in inputs: 
-                #if row['Line'] > 10:
-                #    break
-
-                if str(row['Par.0']) == str(self.__input_numeral) and status_find_child== False:
-                    status_find_child = True
+                if row['Line'] > 245:
+                    break
+                #print()
+                #print(str(row['Par.0']), str(self.__input_numeral))
+                #print(str(row['Opnd Num']), str(self.__type))
+                print(row['Line'], str(row['Opnd Num']), str(self.__type))
+                #print()
+                if str(row['Par.0']) == str(self.__input_numeral) and \
+                   str(row['Opnd Num']) == str(self.__type) and \
+                   status_find_child == False:
+                       print(str(row['Par.0']), str(self.__input_numeral))
+                       print(str(row['Opnd Num']), str(self.__type))
+                       print()
+                       status_find_child = True
 
                 if status_find_child == True and row['Optr Num'] == table_operator[')=']:
+                    print(row['Line'], 'Number: ', row['Par.0'], row['Opnd Num'])
                     self.createChild(row['Par.0'], row['Opnd Num'])
                     status_find_child = False
 
@@ -74,16 +86,24 @@ class Input():
         with Table(self.__panel + '\\' + NAME_INPUTS_FILE) as inputs:
             row = inputs[numberchild]
             self.__children[numberchild] = (typechild, \
-                Input(self.__panel, numberchild, typechild, \
-                    row['Input text']))
+                Input(self.__panel, '', numberchild, typechild, \
+                    row['Input text'], '\t'))
 
     def findChildrenOfChildren(self):
-        for child in self.__children:
-            pass
+        print('findChildrenOfChildren') 
+        for typechild, input in self.__children.values():
+            print('typechild: ', typechild)
+            #if typechild in [ENTRY_TYPE['input'], \
+            if typechild in [ENTRY_TYPE['marker'], \
+                             ENTRY_TYPE['timer']]:
+                print('*Find typechild*')
+                input.findChildren()
+                input.printChildren()
 
     def printChildren(self):
         print('Function input.printChildren working.')
-        print(self.__children)
+        print(self.__tab, self.__children)
+        self.findChildrenOfChildren()
 
 
 class Output():
@@ -98,7 +118,6 @@ class Panel():
         self.rows = []
         self.inputs = {} 
         self.outputs = {} 
-        self.tab = ''
 
         self.__getRowWithPanel()
         self.__getInputsInfo()
@@ -130,7 +149,7 @@ class Panel():
                 if row_type in ['Нет', 'None']:
                     continue
 
-                self.inputs[row_input] = [row_type, Input(self._path, row_input, row_type, row_description)]
+                self.inputs[row_input] = [row_type, Input(self._path, row_input, row_type, 1, row_description)]
 
 
     def __getOutputsInfo(self):

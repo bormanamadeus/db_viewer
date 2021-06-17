@@ -17,7 +17,7 @@ def Main():
 
     print()
     print('*** Start find input: ***')
-    database.findInputFromPanel('Pnl_1', 1)
+    database.findInputFromPanel('Pnl_1', 11)
 
 if __name__ == '__main__':
     Main()
