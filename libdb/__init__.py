@@ -9,10 +9,13 @@ ENTRY_TYPE = {'input': 1,
               'marker': 3,
               'timer': 4}
 
-OPERATOR_TYPE = {')=': 1}
+OPERATOR_TYPE = {')=': 1,
+                 '(': 14,
+                 'или': 10}
 
 MAX_LINE = 50
 
+NAME_DATABASE_FILE = 'Pnl_info.db'
 NAME_LOGIC_FILE = 'pnl_logc.db'
 NAME_INPUTS_FILE = 'pnl_inpt.db'
 NAME_OUTPUTS_FILE = 'pnl_oupt.db'
@@ -32,54 +35,68 @@ def getArg():
     return arg_cmd[1]
 
 
-class Input():
-    """
-        Class Input - class contains information about the input of the fire panel
+class Element():
+    def __init__(self,
+                 number,
+                 itype,
+                 description,
+                 panel,
+                 level=0):
 
-        Open interface:
-            printInfo() - prints input information to the console
-            findChildren() - finds depends output 
-            printChildren() - prints children information
-    """
-    def __init__(self, panel, input_numeral, name=None, input_type=None, description=None, tab=''):
-        self.__panel = panel
-        self.__input_numeral = input_numeral
-        self.__type = input_type
-        self.__name = None
+        self.__number = number
+        self.__etype = itype
         self.__description = description 
-        self.__children = {}
-        self.__tab = tab
+        self.__panel = panel
+        self.__level = level
+        self.__tab = '\t' * self.__level
 
-    def printInfo(self):
-        print('* %s: %s {%s}' % (self.__input_numeral, self.__type, self.__description))
+        self.__children = {}
+
+    def getNumber(self):
+        return self.__number
+
+    def getType(self):
+        return self.__etype
+
+    def getDescription(self):
+        return self.__description
+
+    def getPanel(self):
+        return self.__panel
+
+    def getLevel(self):
+        return self.__level
+
+    def getTab(self):
+        return self.__tab
+
+    def getChildren(self):
+        return self.__children
 
     def findChildren(self):
-
         table_operator = {')=': 1}
         status_find_child = False
-        path_logic_file = self.__panel + '\\' + NAME_LOGIC_FILE
+        path_logic_file = self.__panel.getFolder() + '\\' + NAME_LOGIC_FILE
 
         with Table(path_logic_file) as inputs:
 
             for row in inputs: 
-                if row['Line'] > 245:
+                if row['Operator'].encode('cp850').decode('cp1251') == 'конец':
                     break
-                #print()
-                #print(str(row['Par.0']), str(self.__input_numeral))
-                #print(str(row['Opnd Num']), str(self.__type))
-                print(row['Line'], str(row['Opnd Num']), str(self.__type))
-                #print()
-                if str(row['Par.0']) == str(self.__input_numeral) and \
-                   str(row['Opnd Num']) == str(self.__type) and \
+
+                if str(row['Par.0']) == str(self.__number) and\
+                   str(row['Opnd Num']) !=  table_operator[')='] and\
                    status_find_child == False:
-                       print(str(row['Par.0']), str(self.__input_numeral))
-                       print(str(row['Opnd Num']), str(self.__type))
-                       print()
+                       #print('Find matching, string number: ', str(row['Line']))
+                       #print('Number element: ', str(row['Par.0']), 'Type: ', 'Optr Num: ', 'Operation type: ', str(row['Opnd Num']), 'Type element: ', str(self.__etype))
                        status_find_child = True
 
-                if status_find_child == True and row['Optr Num'] == table_operator[')=']:
-                    print(row['Line'], 'Number: ', row['Par.0'], row['Opnd Num'])
-                    self.createChild(row['Par.0'], row['Opnd Num'])
+                if status_find_child == True and\
+                   row['Optr Num'] == table_operator[')=']:
+                    print('Find child line: ', str(row['Line']), 
+                          'Number: ', str(row['Par.0']),
+                          'Type: ', str(row['Opnd Num']))
+                    print()
                     status_find_child = False
 
     def createChild(self, numberchild, typechild):
@@ -100,159 +117,148 @@ class Input():
                 input.findChildren()
                 input.printChildren()
 
-    def printChildren(self):
-        print('Function input.printChildren working.')
-        print(self.__tab, self.__children)
-        self.findChildrenOfChildren()
+
+class Input(Element):
+    """
+        Class Input - class contains information about the input of the fire panel
+    """
+    entrytype = ENTRY_TYPE['input']
 
 
-class Output():
-    pass
-                         
+class Exit(Element):
+    entrytype = ENTRY_TYPE['exit']
+
+
+class Marker():
+    entrytype = ENTRY_TYPE['marker']
+
+
+class Timer():
+    entrytype = ENTRY_TYPE['timer']
+
 
 class Panel():
     # Class of database station
-    def __init__(self, path):
-        self._path = path
-        self.path_logic_file = self._path + '\\' + NAME_LOGIC_FILE
-        self.rows = []
-        self.inputs = {} 
-        self.outputs = {} 
+    def __init__(self, panel_folder):
+        self.__panel_folder = panel_folder
+        self.__path_logic_file = self.__panel_folder + '\\' + NAME_LOGIC_FILE
+        self.__rows = []
+        self.__inputs = {} 
+        self.__outputs = {} 
 
-        self.__getRowWithPanel()
+        self.__getPanelProgram()
         self.__getInputsInfo()
         self.__getOutputsInfo()
         
-    def __del__(self):
-        pass
-
-    def __getRowWithPanel(self):
-        with Table(self.path_logic_file) as logic_file:
+    def __getPanelProgram(self):
+        with Table(self.__path_logic_file) as logic_file:
             for row in logic_file:
-                self.rows.append(row)
+                self.__rows.append(row)
 
     def __getInputsInfo(self):
-
-        with Table(self._path + '\\' + NAME_INPUTS_FILE) as inputs:
+        with Table(self.__panel_folder + '\\' + NAME_INPUTS_FILE) as inputs:
             for row in inputs:
-                row_type = str(row['Type']).encode('cp850').decode('cp1251')
-                row_input = str(row['Input']).encode('cp850').decode('cp1251')
-                #print(type(row_input), row_input)
-                row_description = str(row['Input text']).encode('cp850').decode('cp1251')
-                if row_type not in ['Нет', 'None']:
-                    pass
-                    #print()
-                    #print(row_input)
-                    #print(row_type)
-                    #print(row_description)
-  
-                if row_type in ['Нет', 'None']:
+                number = str(row['Input']).encode('cp850')\
+                                          .decode('cp1251')
+                itype = str(row['Type']).encode('cp850')\
+                                        .decode('cp1251')
+                description = str(row['Input text']).encode('cp850')\
+                                                    .decode('cp1251')
+
+                if itype in ['Нет', 'None']:
                     continue
-
-                self.inputs[row_input] = [row_type, Input(self._path, row_input, row_type, 1, row_description)]
-
+                
+                self.__inputs[number] = Input(number,
+                                              itype,
+                                              description,
+                                              self)
 
     def __getOutputsInfo(self):
-        pass
+        with Table(self.__panel_folder + '\\' + NAME_OUTPUTS_FILE) as outputs:
+            for row in outputs:
+                number = str(row['Output']).encode('cp850')\
+                                          .decode('cp1251')
+                otype = str(row['Type']).encode('cp850')\
+                                        .decode('cp1251')
+                description = str(row['Output text']).encode('cp850')\
+                                                     .decode('cp1251')
 
-    def printInfo(self):
-        print()
-        print('[ Fire panel info ]')
-        print('* panel path: %s' % (self._path))
-        print('* table: %s' % (self.path_logic_file))
-        self.printInputs()
-        print('* outputs: %s' % (self.outputs))
+                if otype in ['Нет', 'None']:
+                    continue
+                
+                self.__outputs[number] = Input(number,
+                                               otype,
+                                               description,
+                                               self)
 
-    def printInputs(self):
-        for input in self.inputs.values():
-            input[1].printInfo()
+    def getFolder(self):
+        return self.__panel_folder
 
-    def printRow(self, max_line = MAX_LINE):
-        print(self.inputs)
-        pass
-        #for row in self.rows:
-        #    if row['Line'] > max_line:
-        #        break
-#            if str(row['Operand']).encode('cp850').decode('cp1251') == 'Выход'.decode('cp1251'):
-            #if str(row['Operand']).encode('cp850').decode('cp1251') == ''.encode('utf-8').decode('cp1251'):
-                #print('РќР°Р№РґРµС‚ РІС…РѕРґ: ')
-        #    print(str(row).encode('cp850').decode('cp1251'))
+    def getLogicFile(self):
+        return self.__path_logic_file
 
-    def findInput(self, numberInput):
-        print('Start function panel.findInput working.')
-        print('numberInput: ', numberInput)
-        print('numberInput type: ', type(numberInput))
-        if type(numberInput) is not type(str):
-            numberInput = str(numberInput)
-        if numberInput in self.inputs:
-            #print(self.inputs[str(numberInput)].findChildren())
-            self.inputs[numberInput][1].findChildren()
-            self.inputs[numberInput][1].printChildren()
-        print('End of function panel.findInput working.')
+    def getInputs(self):
+        return self.__inputs
 
+    def getOutputs(self):
+        return self.__outputs
 
+    
 class Database():
-    def __init__(self, path):
+    def __init__(self, dir_path):
         """
-            Initialization Database
+            Input arguments:
+            path - database path
+
+            Open functions:
+            getPanels() - return a list of panels
         """
-        self._path = path
-        self.work_dir = None
+        self.__dir_path = dir_path
+        func = (lambda s=self.__dir_path: '' if s[-1] == '\\' else '\\')
+        self.__file_path = self.__dir_path + func() + NAME_DATABASE_FILE
 
-        self.panels_path = {}
-        self.panels_db = {}
+        self.__work_dir = None
+        self.__panels_path = {}
+        self.__panels_db = {}
 
-        self.__getPathToPanels()
-        self.__getPanels()
+        self.__getPathOfPanels() # -> self.__panels_path
+        self.__getPanelsDatabase() # -> self.__panels_db
 
-    def __getPathToPanels(self):
+    def __getPathOfPanels(self):
         """
-            Get paths of panels
+            Get the path of the panels
         """
-        db = Table(self._path) 
+            
+        with Table(self.__file_path) as db:
+            self.__work_dir = os.path.dirname(self.__file_path)
+            
+            for panel in db:
+                if panel['Panel Name'] is not None:
+                    panel_dir = self.__work_dir + '\\' + panel['Panel Name']
+                    if os.path.exists(panel_dir):
+                        self.__panels_path[panel['Panel Name']] = panel_dir
 
-        self.work_dir = os.path.dirname(self._path)
-        
-        for panel in db:
-            if panel['Panel Name'] is not None:
-                panel_dir = self.work_dir + '\\' + panel['Panel Name']
-                if os.path.exists(panel_dir):
-                    self.panels_path[panel['Panel Name']] = panel_dir
-        db.close
-
-    def __getPanels(self):
+    def __getPanelsDatabase(self):
         """
-            Get db of panels 
+            Get database of panels 
         """
-        print('~log~: getPanels function job')
 
-        for (panel_name, panel_path) in self.panels_path.items():
-            self.panels_db[panel_name] = Panel(panel_path) 
+        for (panel_name, panel_path) in self.__panels_path.items():
+            self.__panels_db[panel_name] = Panel(panel_path) 
 
     def printDatabaseInfo(self):
         """ 
-            Print station info 
+            To Print the database information
         """ 
-        print()
-        print('dir of database: ', self.work_dir)
+        print('"To Print the database information"\n')
+        print('1. Database directory: %s' % (self.__work_dir))
+        print('2. List of panels:')
 
-        for panel_name, panel_path in self.panels_path.items():
-            print("Panel {name, path}: %s -> %s" % (panel_name, panel_path))
+        for panel_name, panel_path in self.__panels_path.items():
+            print("\t%s -> %s" % (panel_name, panel_path))
 
-    def printPanelsInfo(self):
-        """
-            Print panels info
-        """
-        for (panel_name, panel_db) in self.panels_db.items():
-            panel_db.printInfo()
-            panel_db.printRow()
-
-    def findInputFromPanel(self, panel, input):
-        print('Function database.findInputFromPanel working.')
-        self.panels_db[panel].findInput(input)    
-
-    def __del__(self):
-        pass
+    def getPanels(self):
+        return self.__panels_db 
 
 
 if __name__ == '__main__':

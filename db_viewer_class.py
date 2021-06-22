@@ -10,14 +10,20 @@ def Main():
 
     name_fire_panel = getArg()
 
-    database = Database(r"C:\bin\project\python\db_viewer\DB\26042021\Pnl_info.db")
+    database = Database(name_fire_panel)
+    #database = Database(r"C:\bin\project\python\db_viewer\DB\26042021")
 
     database.printDatabaseInfo()
-    database.printPanelsInfo()
 
-    print()
-    print('*** Start find input: ***')
-    database.findInputFromPanel('Pnl_1', 11)
+    for (output_number, output) in database.getPanels()['Pnl_1'].getOutputs().items():
+        print('%s: %s: %s' % (output_number, output.getType(), output.getDescription()))
+
+    database.getPanels()['Pnl_1'].getInputs()['1'].findChildren()
+    print(database.getPanels()['Pnl_1'].getInputs()['1'].getChildren())
+
+        #for (, input) in db.getOutputs().items():
+        #    print('%s: %s: %s' % (number, input.getType(), input.getDescription()))
+
 
 if __name__ == '__main__':
     Main()
