@@ -4,23 +4,6 @@ import sys
 import os
 from pypxlib import Table
 
-ENTRY_TYPE = {'input': 1,
-              'exit': 2, 
-              'marker': 3,
-              'timer': 4}
-
-OPERATOR_TYPE = {')=': 1,
-                 '(': 14,
-                 'или': 10}
-
-MAX_LINE = 50
-
-NAME_DATABASE_FILE = 'Pnl_info.db'
-NAME_LOGIC_FILE = 'pnl_logc.db'
-NAME_INPUTS_FILE = 'pnl_inpt.db'
-NAME_OUTPUTS_FILE = 'pnl_oupt.db'
-
-
 def getArg():
     # Get name database from arguments command string
     arg_cmd = []
@@ -34,17 +17,35 @@ def getArg():
 
     return arg_cmd[1]
 
+ENTRY_TYPE = {}
+
+OPERATOR_TYPE = {')=': 1,
+                 '(': 14,
+                 'или': 10}
+
+MAX_LINE = 50
+
+NAME_DATABASE_FILE = 'Pnl_info.db'
+NAME_LOGIC_FILE = 'pnl_logc.db'
+NAME_INPUTS_FILE = 'pnl_inpt.db'
+NAME_OUTPUTS_FILE = 'pnl_oupt.db'
+
+ELEMENT_NUMBER_COLUMN = 'Par.0'
+ELEMENT_TYPE_COLUMN = 'Opnd Num'
+OPERATOR_TYPE_COLUMN = 'Optr Num'
+
 
 class Element():
+
     def __init__(self,
                  number,
-                 itype,
+                 etype,
                  description,
                  panel,
                  level=0):
 
         self.__number = number
-        self.__etype = itype
+        self.__etype = etype
         self.__description = description 
         self.__panel = panel
         self.__level = level
@@ -84,27 +85,37 @@ class Element():
                 if row['Operator'].encode('cp850').decode('cp1251') == 'конец':
                     break
 
-                if str(row['Par.0']) == str(self.__number) and\
-                   str(row['Opnd Num']) !=  table_operator[')='] and\
+                #if str(row['Par.0']) == str(self.__number) and\
+                if str(row[ELEMENT_NUMBER_COLUMN]) == str(self.__number) and\
+                   str(row[ELEMENT_TYPE_COLUMN]) !=  table_operator[')='] and\
+                   str(row[ELEMENT_TYPE_COLUMN]) !=  table_operator[')='] and\
                    status_find_child == False:
                        #print('Find matching, string number: ', str(row['Line']))
                        #print('Number element: ', str(row['Par.0']), 'Type: ', 'Optr Num: ', 'Operation type: ', str(row['Opnd Num']), 'Type element: ', str(self.__etype))
                        status_find_child = True
 
                 if status_find_child == True and\
-                   row['Optr Num'] == table_operator[')=']:
+                   row[OPERATOR_TYPE_COLUMN] == table_operator[')=']:
                     print('Find child line: ', str(row['Line']), 
                           'Number: ', str(row['Par.0']),
                           'Type: ', str(row['Opnd Num']))
-                    print()
+                    self.createChild(row[ELEMENT_NUMBER_COLUMN], row[ELEMENT_TYPE_COLUMN])
+
                     status_find_child = False
 
     def createChild(self, numberchild, typechild):
-        with Table(self.__panel + '\\' + NAME_INPUTS_FILE) as inputs:
-            row = inputs[numberchild]
-            self.__children[numberchild] = (typechild, \
-                Input(self.__panel, '', numberchild, typechild, \
-                    row['Input text'], '\t'))
+        print(numberchild, typechild)
+        self.__children[(numberchild, typechild)] = ENTRY_TYPE[typechild]\
+                                                              (numberchild,
+                                                               '',
+                                                               '',
+                                                               self.__panel,
+                                                               ++self.__level)
+        #with Table(self.__panel + '\\' + NAME_INPUTS_FILE) as inputs:
+        #    row = inputs[numberchild]
+        #    self.__children[numberchild] = (typechild, \
+        #        Input(self.__panel, '', numberchild, typechild, \
+        #            row['Input text'], '\t'))
 
     def findChildrenOfChildren(self):
         print('findChildrenOfChildren') 
@@ -122,20 +133,28 @@ class Input(Element):
     """
         Class Input - class contains information about the input of the fire panel
     """
-    entrytype = ENTRY_TYPE['input']
+    pass
+    #entrytype = ENTRY_TYPE['Input']
 
 
 class Exit(Element):
-    entrytype = ENTRY_TYPE['exit']
+    pass
+    #entrytype = ENTRY_TYPE['exit']
 
 
-class Marker():
-    entrytype = ENTRY_TYPE['marker']
+class Marker(Element):
+    pass
+    #entrytype = ENTRY_TYPE['marker']
 
 
-class Timer():
-    entrytype = ENTRY_TYPE['timer']
+class Timer(Element):
+    pass
+    #entrytype = ENTRY_TYPE['timer']
 
+ENTRY_TYPE = {1: Input,
+              2: Exit, 
+              3: Marker,
+              4: Timer}
 
 class Panel():
     # Class of database station
