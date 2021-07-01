@@ -5,7 +5,9 @@ import os
 from pypxlib import Table
 
 def getArg():
-    # Get name database from arguments command string
+    ''' 
+        Get name database from command line arguments
+    '''
     arg_cmd = []
 
     for param in sys.argv:
@@ -15,6 +17,7 @@ def getArg():
         print('--> Error: At least one parametr must be present!\n-->        "db_viewer.py <path name to database>"')
         exit()
 
+    #return dir to database
     return arg_cmd[1]
 
 ENTRY_TYPE = {}
@@ -151,10 +154,12 @@ class Timer(Element):
     pass
     #entrytype = ENTRY_TYPE['timer']
 
+
 ENTRY_TYPE = {1: Input,
               2: Exit, 
               3: Marker,
               4: Timer}
+
 
 class Panel():
     # Class of database station
@@ -240,8 +245,8 @@ class Database():
         self.__panels_path = {}
         self.__panels_db = {}
 
-        self.__getPathOfPanels() # -> self.__panels_path
-        self.__getPanelsDatabase() # -> self.__panels_db
+        self.__getPathOfPanels() # set self.__panels_path
+        self.__getPanelsDatabase() # set self.__panels_db
 
     def __getPathOfPanels(self):
         """
