@@ -31,13 +31,11 @@ def mainloop():
 
 def start():
     print('start job')
-#TODO refactoring: use standart function 'enumerate' in loop
-def showmenu(options):
-    number = 1
 
-    for option in options:
-        print('%s: %s' % (number, option))
-        number = number + 1
+def showmenu(options):
+
+    for (number, option) in enumerate(options):
+        print('%s: %s' % (number + 1, option))
  
 def choiceSubmenu(options):
     number_submenu = (lambda: int(input()))()
@@ -68,9 +66,9 @@ def printDB():
     #put dir to database
     print(db)
     db.printDatabaseInfo()
-#TODO check text
+
 def helloMessage():
-    print('Thank you a millon, what use this app!')
+    print('Thank you a million what use this app!')
 
 menu = {'Start': [start, ['Load database', 'End']],
         'End': [end, {}],
