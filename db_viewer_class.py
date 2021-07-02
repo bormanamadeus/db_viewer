@@ -8,7 +8,8 @@ import menu
 def Main():
     print()
 
-    menu.mainloop() 
+    _menu = menu.Menu()
+    _menu.mainloop() 
 
 '''
     for (output_number, output) in database.getPanels()['Pnl_1'].getOutputs().items():

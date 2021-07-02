@@ -4,75 +4,74 @@ import os
 
 from libdb import *
 
+#TODO check english text into class`s functions
+class Menu():
 
-menu = {}
-db = None 
+    def __init__(self):
+        self.db = None 
+        self.menu = {'Start': [self._start, ['Load database', 'End']],
+                     'End': [self._end, {}],
+                     'Load database': [self._loadDB, ['Print info database', 'End']],
+                     'Print info database': [self._printDB, ['Print info database', 'Thank', 'End']],
+                     'Thank': [self._helloMessage, ['Load database', 'End']]}
 
-def mainloop():
-    '''
-    '''
-    os.system('clear')
-    
-    #To point start submenu
-    submenu = 'Start' 
-    final = False
-
-    while not final:
-        (function, options) = menu[submenu]
-        
-        #check exit signal
-        if function():
-            break
-        
-        showmenu(options)
-        submenu = choiceSubmenu(options)
-
+    def mainloop(self):
+        ''' mainloop - basic loop menu
+        In loop view submenu
+        '''
         os.system('clear')
+        
+        #To point start submenu
+        submenu = 'Start' 
 
-def start():
-    print('start job')
+        while True:
+            (function, options) = self.menu[submenu]
+            
+            #check exit signal, if false end function menu
+            if function():
+                break
+            
+            self.__showmenu(options)
+            submenu = self.__choiceSubmenu(options)
 
-def showmenu(options):
+            os.system('clear')
 
-    for (number, option) in enumerate(options):
-        print('%s: %s' % (number + 1, option))
- 
-def choiceSubmenu(options):
-    number_submenu = (lambda: int(input()))()
-    number_submenu = number_submenu - 1
+    def _start(self):
+        ''' Initialization '''
+        pass
 
-    if number_submenu > len(options):
-        print('warning: inputing submenu number bigger having')
+    def __showmenu(self, options):
+        print("# ########## #")
+        print("# Main menu: #")
+        print("# ########## #")
+        for (number, option) in enumerate(options):
+            print('%s: %s' % (number + 1, option))
+     
+    def __choiceSubmenu(self, options):
+        number_submenu = (lambda: int(input()))()
+        number_submenu = number_submenu - 1
 
-    return options[number_submenu]
+        if number_submenu > len(options):
+            print('warning: inputing submenu number bigger having')
 
-def end():
-    print('end job')
-    return True    
+        return options[number_submenu]
 
-def loadDB():
-    global db
+    def _end(self):
+        print('"Good bye!"')
+        return True    
 
-    print('loadDB job')
-    name_fire_panel = getArg()
-    print(name_fire_panel)
-    db = Database(name_fire_panel)
-    print(db)
+    def _loadDB(self):
+        os.system('clear')
+        if not self.db:
+            database_dir = getArg()
+            print('"Path to database -> %s"\n' % (database_dir))
+            self.db = Database(database_dir)
+        else:
+            print('"Database already load."\n')
 
-def printDB():
-    global db
+    def _printDB(self):
+        self.db.printDatabaseInfo()
+        print()
 
-    print('printDB job')
-    #put dir to database
-    print(db)
-    db.printDatabaseInfo()
-
-def helloMessage():
-    print('Thank you a million what use this app!')
-
-menu = {'Start': [start, ['Load database', 'End']],
-        'End': [end, {}],
-        'Load database': [loadDB, ['Print info database', 'End']],
-        'Print info database': [printDB, ['Print info database', 'Thank', 'End']],
-        'Thank': [helloMessage, ['Print info database', 'End']]}
-
+    def _helloMessage(self):
+        print('"Thank you a million what use this app!"\n')
